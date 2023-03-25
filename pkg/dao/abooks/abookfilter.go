@@ -17,12 +17,7 @@ type BooksFilterBuilder struct {
 
 func NewBooksFilterBuilder() *BooksFilterBuilder {
 	return &BooksFilterBuilder{
-		filter: &FindBooksFilter{
-			AfterDate:  nil,
-			BeforeDate: nil,
-			AuthorId:   nil,
-			NoAuthor:   nil,
-		},
+		filter: &FindBooksFilter{},
 	}
 }
 
