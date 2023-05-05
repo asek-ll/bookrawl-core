@@ -2,6 +2,8 @@ package abooks
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ABook struct {
@@ -19,4 +21,5 @@ type ABook struct {
 	Quality     string
 	Props       map[string]string
 	AuthorId    []int
+	Authors     []primitive.ObjectID `bson:"authors,omitempty"`
 }

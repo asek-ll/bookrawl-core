@@ -94,7 +94,38 @@ func (as *AbookStore) GetById(id string) (*ABook, error) {
 
 }
 
+func (as *AbookStore) FindForEach(filter *FindBooksFilter, pageSize int, callback func(*ABook) error) error {
+
+	currentFilter := filter
+	for {
+		page, err := as.Find(currentFilter, pageSize)
+		if err != nil {
+			return err
+		}
+		for _, book := range page.Books {
+			err = callback(&book)
+			if err != nil {
+				return err
+			}
+		}
+
+		if !page.HasNext {
+			return nil
+		}
+
+		lastBook := page.Books[len(page.Books)-1]
+		if currentFilter == nil {
+			currentFilter = &FindBooksFilter{}
+		}
+		currentFilter.BeforeDate = &lastBook.Date
+	}
+}
+
 func (as *AbookStore) Find(filter *FindBooksFilter, pageSize int) (*AbooksPage, error) {
+	if pageSize <= 0 {
+		return nil, fmt.Errorf("Invalid page size")
+	}
+
 	opts := options.Find().SetSort(bson.D{{Key: "date", Value: -1}}).SetLimit(int64(pageSize + 1))
 	queryFilter := bson.D{}
 

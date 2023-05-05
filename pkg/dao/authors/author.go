@@ -6,4 +6,5 @@ type Author struct {
 	Id        primitive.ObjectID `bson:"_id,omitempty"`
 	FantlabId int                `bson:"fantlabId,omitempty"`
 	Name      string             `bson:"name"`
+	Aliases   []string           `bson:"aliases"`
 }

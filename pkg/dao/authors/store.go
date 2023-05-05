@@ -2,10 +2,12 @@ package authors
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -21,8 +23,16 @@ func (store *Store) Upsert(author *Author) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := store.Collection.UpdateOne(ctx, filter, update, opts)
-	return err
+	result, err := store.Collection.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	if result.UpsertedID != nil {
+		author.Id = result.UpsertedID.(primitive.ObjectID)
+	}
+
+	return nil
 }
 
 func (store *Store) UpsertManyByFantlabId(authors []*Author) error {
@@ -42,21 +52,40 @@ func (store *Store) UpsertManyByFantlabId(authors []*Author) error {
 	return err
 }
 
-func isNameMatchedStrict(name string, author *Author) bool {
+func isAuthorMatchedStrict(name string, author *Author) bool {
 	if author == nil {
 		return false
 	}
 
+	if isNameMatchedStrict(name, author.Name) {
+		return true
+	}
+
+	for _, alias := range author.Aliases {
+		if isNameMatchedStrict(name, alias) {
+			return true
+		}
+	}
+	return false
+}
+
+func isNameMatchedStrict(name string, authorName string) bool {
+	name = strings.ReplaceAll(strings.ToLower(name), "ё", "е")
+	authorName = strings.ReplaceAll(strings.ToLower(authorName), "ё", "е")
+
 	authorsWords := make(map[string]bool)
-	for _, s := range strings.Split(author.Name, " ") {
+	for _, s := range strings.Split(authorName, " ") {
 		authorsWords[strings.ToLower(s)] = true
 	}
 
 	for _, s := range strings.Split(name, " ") {
 		if _, e := authorsWords[strings.ToLower(s)]; !e {
+			fmt.Println("compare", name, "==", authorName, false)
 			return false
 		}
 	}
+
+	fmt.Println("compare", name, "==", authorName, true)
 
 	return true
 }
@@ -65,7 +94,7 @@ func (store *Store) FindByName(name string) (*Author, error) {
 	filter := bson.D{{Key: "$text", Value: bson.D{{Key: "$search", Value: name}}}}
 	sort := bson.D{{Key: "score", Value: bson.D{{Key: "$meta", Value: "textScore"}}}}
 
-	opts := options.Find().SetSort(sort).SetLimit(1)
+	opts := options.Find().SetSort(sort).SetLimit(3)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -84,12 +113,37 @@ func (store *Store) FindByName(name string) (*Author, error) {
 		return nil, err
 	}
 
-	if len(models) > 0 {
-		author := &models[0]
-		if isNameMatchedStrict(name, author) {
-			return author, nil
+	for _, author := range models {
+		if isAuthorMatchedStrict(name, &author) {
+			return &author, nil
 		}
 	}
 
 	return nil, nil
+}
+
+func (store *Store) findOne(filter interface{}) (*Author, error) {
+
+	opts := &options.FindOneOptions{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	result := store.Collection.FindOne(ctx, filter, opts)
+
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	var author Author
+	err := result.Decode(&author)
+	if err != nil {
+		return nil, err
+	}
+
+	return &author, nil
+}
+
+func (store *Store) FindOneById(id primitive.ObjectID) (*Author, error) {
+	filter := bson.D{{Key: "_id", Value: id}}
+	return store.findOne(filter)
 }
