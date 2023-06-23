@@ -149,14 +149,14 @@ func (as *AbookStore) Find(filter *FindBooksFilter, pageSize int) (*AbooksPage, 
 				},
 			})
 		}
-		if filter.AuthorId != nil {
+		if filter.Author != nil {
 			queryFilter = append(queryFilter, bson.E{
-				Key:   "authorid",
-				Value: *filter.AuthorId,
+				Key:   "authors",
+				Value: *filter.Author,
 			})
 		} else if filter.NoAuthor != nil && *filter.NoAuthor == true {
 			queryFilter = append(queryFilter, bson.E{
-				Key:   "authorid",
+				Key:   "authors",
 				Value: nil,
 			})
 		}

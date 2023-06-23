@@ -143,7 +143,39 @@ func (store *Store) findOne(filter interface{}) (*Author, error) {
 	return &author, nil
 }
 
+func (store *Store) findMany(filter interface{}) ([]Author, error) {
+
+	opts := options.Find()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	result, err := store.Collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var models []Author
+	err = result.All(ctx, &models)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return models, nil
+}
+
 func (store *Store) FindOneById(id primitive.ObjectID) (*Author, error) {
 	filter := bson.D{{Key: "_id", Value: id}}
 	return store.findOne(filter)
+}
+
+func (store *Store) FindManyByFantlabId(fantlabIds []int) ([]Author, error) {
+	filter := bson.D{{Key: "fantlabId", Value: bson.D{{Key: "$in", Value: fantlabIds}}}}
+	return store.findMany(filter)
 }

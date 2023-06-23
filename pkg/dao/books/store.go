@@ -55,6 +55,35 @@ func (store *Store) Upsert(book *Book) error {
 	return err
 }
 
+func (store *Store) UpserByFantLabId(fantlabId int, book *Book) error {
+	opts := options.Update().SetUpsert(true)
+	filter := bson.D{
+		{Key: "fantlabId", Value: fantlabId},
+	}
+
+	update := bson.D{{Key: "$set", Value: book}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := store.Collection.UpdateOne(ctx, filter, update, opts)
+	return err
+}
+
+func (store *Store) UpserManyByFantLabId(books []*Book) error {
+	models := make([]mongo.WriteModel, len(books))
+
+	for i, book := range books {
+		models[i] = mongo.NewUpdateOneModel().SetFilter(
+			bson.D{{Key: "fantlabId", Value: book.FantLabId}},
+		).SetUpsert(true).SetUpdate(bson.D{{Key: "$set", Value: book}})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := store.Collection.BulkWrite(ctx, models)
+	return err
+}
+
 func (store *Store) FindByFantLabId(fantlabId int) (*Book, error) {
 	filter := bson.D{
 		{Key: "fantlabId", Value: fantlabId},

@@ -2,12 +2,14 @@ package abooks
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type FindBooksFilter struct {
 	AfterDate  *time.Time
 	BeforeDate *time.Time
-	AuthorId   *int
+	Author     *primitive.ObjectID
 	NoAuthor   *bool
 }
 
@@ -31,13 +33,13 @@ func (fb *BooksFilterBuilder) SetBeforeDate(t *time.Time) *BooksFilterBuilder {
 	return fb
 }
 
-func (fb *BooksFilterBuilder) SetAuthorId(authorId *int) *BooksFilterBuilder {
-	fb.filter.AuthorId = authorId
+func (fb *BooksFilterBuilder) SetAuthor(author *primitive.ObjectID) *BooksFilterBuilder {
+	fb.filter.Author = author
 	return fb
 }
 
 func (fb *BooksFilterBuilder) NoAuthor() *BooksFilterBuilder {
-	fb.filter.AuthorId = nil
+	fb.filter.Author = nil
 	t := true
 	fb.filter.NoAuthor = &t
 	return fb
