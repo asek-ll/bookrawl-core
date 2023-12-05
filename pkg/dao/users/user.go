@@ -14,6 +14,8 @@ type User struct {
 	Id              primitive.ObjectID   `bson:"_id,omitempty"`
 	ChatId          *int64               `bson:"chatId,omitempty"`
 	FavoriteAuthors []primitive.ObjectID `bson:"favoriteAuthors,omitempty"`
+	YandexUid       string               `bson:"yandexUid,omitempty"`
+	Roles           []string             `bson:"roles,omitempty"`
 }
 
 type Store struct {
@@ -135,4 +137,30 @@ func (s *Store) AddFavoriteAuthor(userId primitive.ObjectID, authorId primitive.
 	}}}
 
 	return s.updateOne(userId, update)
+}
+
+func (s *Store) FindByYandexUid(id string) (*User, error) {
+	filter := bson.D{{Key: "yandexUid", Value: id}}
+
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetUpsert(true)
+
+	update := bson.D{{Key: "$setOnInsert", Value: filter}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	result := s.Collection.FindOneAndUpdate(ctx, filter, update, opts)
+
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	var user User
+	err := result.Decode(&user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

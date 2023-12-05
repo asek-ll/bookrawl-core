@@ -2,7 +2,6 @@ package authors
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -80,12 +79,9 @@ func isNameMatchedStrict(name string, authorName string) bool {
 
 	for _, s := range strings.Split(name, " ") {
 		if _, e := authorsWords[strings.ToLower(s)]; !e {
-			fmt.Println("compare", name, "==", authorName, false)
 			return false
 		}
 	}
-
-	fmt.Println("compare", name, "==", authorName, true)
 
 	return true
 }

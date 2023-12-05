@@ -11,13 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func CreateMongoClient() (*mongo.Client, error) {
-	connUri := os.Getenv("MONGODB_URI")
-
-	if connUri == "" {
-		return nil, errors.New("mongodbURI required")
-	}
-
+func CreateMongoClientWithUri(connUri string) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -34,4 +28,14 @@ func CreateMongoClient() (*mongo.Client, error) {
 	}
 
 	return client, nil
+}
+
+func CreateMongoClient() (*mongo.Client, error) {
+	connUri := os.Getenv("MONGODB_URI")
+
+	if connUri == "" {
+		return nil, errors.New("mongodbURI required")
+	}
+
+	return CreateMongoClientWithUri(connUri)
 }
